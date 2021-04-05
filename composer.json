@@ -1,0 +1,12 @@
+{
+    "name": "mauro/crud-ajax-jquery",
+    "description": "An example application, contact list crud developed using php, jquery and ajax",
+    "type": "project",
+    "authors": [
+        {
+            "name": "Mauro Chojrin",
+            "email": "mauro.chojrin@leewayweb.com"
+        }
+    ],
+    "require": {}
+}
