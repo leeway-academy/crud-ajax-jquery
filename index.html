@@ -148,6 +148,8 @@
     });
 
     $('#new_contact').click(function () {
+        $('#new_contact').prop('disabled', true);
+
         $('#contact_table > tbody').append(
             '<tr>' +
             '<td><input id="firstname" name="firstname"/></td>' +
@@ -169,12 +171,15 @@
                 newRow.remove();
                 postData.id = resp;
                 addRecord(postData);
+
                 $('.edit').click(editRecord);
                 $('.delete').click(deleteRecord);
             });
+            $('#new_contact').prop('disabled', false);
         });
         $('#cancel_new').click(function () {
             newRow.remove();
+            $('#new_contact').prop('disabled', false);
         });
     });
 </script>
