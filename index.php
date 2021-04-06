@@ -8,7 +8,7 @@ try {
 
 switch (strtolower($_SERVER['REQUEST_METHOD'])) {
     case 'get':
-        $sql = 'SELECT * FROM contacts ORDER BY lastname, firstname';
+        $sql = 'SELECT * FROM contacts';
 
         try {
             $st = $db->query($sql, PDO::FETCH_ASSOC);
@@ -19,6 +19,21 @@ switch (strtolower($_SERVER['REQUEST_METHOD'])) {
         }
         break;
     case 'post':
+        $sql = "INSERT INTO contacts (firstname, lastname, email) VALUES (:firstname, :lastname, :email)";
+
+        $st = $db->prepare($sql);
+        try {
+            $st->execute([
+                'firstname' => $_POST['firstname'],
+                'lastname' => $_POST['lastname'],
+                'email' => $_POST['email'],
+            ]);
+
+            echo $db->lastInsertId();
+        } catch (PDOException $exception) {
+            http_response_code(500);
+            die ($exception->getMessage());
+        }
         break;
     case 'delete':
         if (empty($id = filter_input(INPUT_GET, 'id'))) {

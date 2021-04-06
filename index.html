@@ -31,128 +31,150 @@
         integrity="sha384-ho+j7jyWK8fNQe+A12Hb8AhRq26LrZ/JpcUGGOn+Y7RsweNrtN/tE3MoK7ZeZDyx"
         crossorigin="anonymous"></script>
 <script type="application/javascript">
+    function addRecord(record, prevRow) {
+        let contactTableBody = $('#contact_table > tbody');
+
+        let newRow = '<tr data-id="' + record.id + '">' +
+            '   <td>' + record.firstname + '</td>' +
+            '   <td>' + record.lastname + '</td>' +
+            '   <td>' + record.email + '</td>' +
+            '   <td><button class="btn btn-primary edit">Edit</button></td>' +
+            '   <td><button class="btn btn-danger delete">Delete</button></td>' +
+            '</tr>';
+
+        if (prevRow) {
+            prevRow.appendChild(newRow);
+        } else {
+            contactTableBody.append(newRow);
+        }
+    }
+
+    function getEditRow(curRow)
+    {
+        return '<tr data-id="' + curRow.attr('data-id') + '">' +
+            '<td><input id="firstname" name="firstname" value="' + curRow.children()[0].textContent + '"/></td>' +
+            '<td><input id="lastname" name="lastname" value="' + curRow.children()[1].textContent + '"/></td>' +
+            '<td><input id="email" name="email" value="' + curRow.children()[2].textContent + '"/></td>' +
+            '<td><button id="edit_confirm" class="btn btn-success">Confirm</button></td>' +
+            '<td><button id="edit_cancel" class="btn btn-secondary">Cancel</td>' +
+            '</tr>';
+    }
+
+    editRecord = function () {
+        let curRow = $(this).closest('tr');
+        let oldRow = curRow.clone();
+
+        let editRow = getEditRow(curRow);
+        let prevRow = curRow.previousSibling;
+        let contactTableBody = $('#contact_table > tbody');
+
+        $('#edit_cancel').click(function () {
+            let prevRow = $(this).closest('tr').previousSibling;
+            $(this).closest('tr').remove();
+
+            if (prevRow) {
+                prevRow.appendChild(oldRow);
+            } else {
+                contactTableBody.append(oldRow);
+            }
+
+            $('.edit').click(editRecord);
+            $('.delete').click(deleteRecord);
+        });
+
+        curRow.remove();
+        if (prevRow) {
+            prevRow.appendChild(editRow);
+        } else {
+            contactTableBody.append(editRow);
+
+        }
+
+        $('#edit_confirm').click(function () {
+            let curRow = $(this).closest('tr');
+            let id = curRow.attr('data-id');
+
+            let data = {
+                firstname: curRow.find('input[name="firstname"]').val(),
+                lastname: curRow.find('input[name="lastname"]').val(),
+                email: curRow.find('input[name="email"]').val(),
+            }
+
+            $.ajax('index.php?id=' + id, {
+                method: 'PUT',
+                data: data,
+                success: function() {
+                    curRow.remove();
+                    addRecord(data);
+                    $('.edit').click(editRecord);
+                    $('.delete').click(deleteRecord);
+                },
+                error: function( jqXHR, textStatus, errorThrown ) {
+                    alert(errorThrown);
+                }
+            });
+        });
+    };
+
+    deleteRecord = function () {
+        let curRow = $(this).closest('tr');
+        let id = curRow.attr('data-id');
+        let email = curRow.children()[2].textContent;
+        if (confirm("You're about to delete '" + email + "' do you confirm?")) {
+            $.ajax({
+                url: 'index.php?id=' + id,
+                type: 'DELETE',
+                success: function (result) {
+                    curRow.remove();
+                },
+                error: function () {
+                    alert('Something went wrong at the server side');
+                }
+            });
+        }
+    };
+
     $(document).ready(function () {
         $.get('index.php', function (resp) {
             let results = JSON.parse(resp);
 
-            let contactTableBody = $('#contact_table > tbody');
             $.each(results, function (i, record) {
-                let newRow = '<tr data-id="' + record.id + '">' +
-                    '   <td>' + record.firstname + '</td>' +
-                    '   <td>' + record.lastname + '</td>' +
-                    '   <td>' + record.email + '</td>' +
-                    '   <td><button class="btn btn-primary edit">Edit</button></td>' +
-                    '   <td><button class="btn btn-danger delete">Delete</button></td>' +
-                    '</tr>';
-                contactTableBody.append(newRow);
+                addRecord(record);
             });
 
-            $('.edit').click(function () {
-                let curRow = $(this).closest('tr');
-                let oldRow = curRow.clone();
-
-                let originalFirstName = curRow.children()[0].textContent;
-                let originalLastName = curRow.children()[1].textContent;
-                let originalEmail = curRow.children()[2].textContent;
-                let editRow = '<tr data-id="' + curRow.attr('data-id') + '">' +
-                    '<td><input id="firstname" name="firstname" value="' + originalFirstName + '"/></td>' +
-                    '<td><input id="lastname" name="lastname" value="' + originalLastName + '"/></td>' +
-                    '<td><input id="email" name="email" value="' + originalEmail + '"/></td>' +
-                    '<td><button id="edit_confirm" class="btn btn-success">Confirm</button></td>' +
-                    '<td><button id="edit_cancel" class="btn btn-secondary">Cancel</td>' +
-                    '</tr>';
-                let prevRow = curRow.previousSibling;
-
-                curRow.remove();
-
-                if (prevRow) {
-                    prevRow.appendChild($(editRow));
-                } else {
-                    contactTableBody.append(editRow);
-                }
-                $('#edit_confirm').click(function () {
-                    let curRow = $(this).closest('tr');
-                    let id = curRow.attr('data-id');
-
-                    let newFirstName = curRow.find('input[name="firstname"]').val();
-                    let newLastName = curRow.find('input[name="lastname"]').val();
-                    let newEmail = curRow.find('input[name="email"]').val();
-
-                    $.ajax('index.php?id=' + id, {
-                        method: 'PUT',
-                        data: {
-                            firstname: newFirstName,
-                            lastname: newLastName,
-                            email: newEmail,
-                        },
-                        success: function(data) {
-                            let newRow = '<tr data-id="' + id + '">' +
-                                '   <td>' + newFirstName + '</td>' +
-                                '   <td>' + newLastName + '</td>' +
-                                '   <td>' + newEmail + '</td>' +
-                                '   <td><button class="btn btn-primary edit">Edit</button></td>' +
-                                '   <td><button class="btn btn-danger delete">Delete</button></td>' +
-                                '</tr>';
-
-                            if (prevRow) {
-                                prevRow.appendChild(newRow);
-                            } else {
-                                contactTableBody.append(newRow);
-                            }
-                            curRow.remove();
-                        },
-                        error: function( jqXHR, textStatus, errorThrown ) {
-                            alert(errorThrown);
-                        }
-                    });
-                });
-                $('#edit_cancel').click(function () {
-                    let prevRow = $(this).closest('tr').previousSibling;
-                    $(this).closest('tr').remove();
-
-                    if (prevRow) {
-                        prevRow.appendChild(oldRow);
-                    } else {
-                        $contactTableBody.append(oldRow);
-                    }
-                });
-            })
-            $('.delete').click(function () {
-                let curRow = $(this).closest('tr');
-                let id = curRow.attr('data-id');
-                let email = curRow.children()[2].textContent;
-                if (confirm("You're about to delete '" + email + "' do you confirm?")) {
-                    $.ajax({
-                        url: 'index.php?id=' + id,
-                        type: 'DELETE',
-                        success: function (result) {
-                            curRow.remove();
-                        },
-                        error: function () {
-                            alert('Something went wrong at the server side');
-                        }
-                    });
-                }
-            });
+            $('.edit').click(editRecord);
+            $('.delete').click(deleteRecord);
         });
     });
 
     $('#new_contact').click(function () {
-        $('#contact_table > tbody:last-child').append(
+        $('#contact_table > tbody').append(
             '<tr>' +
             '<td><input id="firstname" name="firstname"/></td>' +
             '<td><input id="lastname" name="lastname"/></td>' +
             '<td><input id="email" name="email"/></td>' +
-            '<td><button id="confirm">Confirm</button></td>' +
-            '<td><button id="cancel">Cancel</td>' +
+            '<td><button id="confirm_new" class="btn btn-primary">Confirm</button></td>' +
+            '<td><button id="cancel_new" class="btn btn-secondary">Cancel</td>' +
             '</tr>'
         );
-        $('#confirm').click(function () {
-            $.post('index.php', {
+        let newRow = $('#contact_table > tbody').children().last();
+
+        $('#confirm_new').click(function () {
+            let postData = {
                 firstname: $('#firstname').val(),
                 lastname: $('#lastname').val(),
                 email: $('#email').val()
+            };
+            $.post('index.php', postData, function(resp) {
+                newRow.remove();
+                postData.id = resp;
+                addRecord(postData);
+                $('.edit').click(editRecord);
+                $('.delete').click(deleteRecord);
             });
+        });
+        $('#cancel_new').click(function () {
+            newRow.remove();
         });
     });
 </script>
