@@ -1,0 +1,158 @@
+<html>
+<head>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/css/bootstrap.min.css"
+          integrity="sha384-TX8t27EcRE3e/ihU7zmQxVncDAy5uIKz4rEkgIXeMed4M0jlfIDPvg6uqKI2xXr2" crossorigin="anonymous">
+</head>
+<body>
+<div class="container">
+    <h1 style="text-align: center">Leeway Academy's contact list example</h1>
+    <h3 style="text-align: center;">A POC for jQuery + Ajax + PHP</h3>
+    <br/>
+    <table id="contact_table" class="table table-striped">
+        <thead>
+        <tr>
+            <th>First name</th>
+            <th>Last name</th>
+            <th>Email</th>
+            <th>&nbsp;</th>
+            <th>&nbsp;</th>
+        </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+    <button id="new_contact" class="btn btn-success">New</button>
+</div>
+</body>
+</html>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"
+        integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-ho+j7jyWK8fNQe+A12Hb8AhRq26LrZ/JpcUGGOn+Y7RsweNrtN/tE3MoK7ZeZDyx"
+        crossorigin="anonymous"></script>
+<script type="application/javascript">
+    $(document).ready(function () {
+        $.get('index.php', function (resp) {
+            let results = JSON.parse(resp);
+
+            let contactTableBody = $('#contact_table > tbody');
+            $.each(results, function (i, record) {
+                let newRow = '<tr data-id="' + record.id + '">' +
+                    '   <td>' + record.firstname + '</td>' +
+                    '   <td>' + record.lastname + '</td>' +
+                    '   <td>' + record.email + '</td>' +
+                    '   <td><button class="btn btn-primary edit">Edit</button></td>' +
+                    '   <td><button class="btn btn-danger delete">Delete</button></td>' +
+                    '</tr>';
+                contactTableBody.append(newRow);
+            });
+
+            $('.edit').click(function () {
+                let curRow = $(this).closest('tr');
+                let oldRow = curRow.clone();
+
+                let originalFirstName = curRow.children()[0].textContent;
+                let originalLastName = curRow.children()[1].textContent;
+                let originalEmail = curRow.children()[2].textContent;
+                let editRow = '<tr data-id="' + curRow.attr('data-id') + '">' +
+                    '<td><input id="firstname" name="firstname" value="' + originalFirstName + '"/></td>' +
+                    '<td><input id="lastname" name="lastname" value="' + originalLastName + '"/></td>' +
+                    '<td><input id="email" name="email" value="' + originalEmail + '"/></td>' +
+                    '<td><button id="edit_confirm" class="btn btn-success">Confirm</button></td>' +
+                    '<td><button id="edit_cancel" class="btn btn-secondary">Cancel</td>' +
+                    '</tr>';
+                let prevRow = curRow.previousSibling;
+
+                curRow.remove();
+
+                if (prevRow) {
+                    prevRow.appendChild($(editRow));
+                } else {
+                    contactTableBody.append(editRow);
+                }
+                $('#edit_confirm').click(function () {
+                    let curRow = $(this).closest('tr');
+                    let id = curRow.attr('data-id');
+
+                    let newFirstName = curRow.find('input[name="firstname"]').val();
+                    let newLastName = curRow.find('input[name="lastname"]').val();
+                    let newEmail = curRow.find('input[name="email"]').val();
+
+                    $.ajax('index.php?id=' + id, {
+                        method: 'PUT',
+                        data: {
+                            firstname: newFirstName,
+                            lastname: newLastName,
+                            email: newEmail,
+                        },
+                        success: function(data) {
+                            let newRow = '<tr data-id="' + id + '">' +
+                                '   <td>' + newFirstName + '</td>' +
+                                '   <td>' + newLastName + '</td>' +
+                                '   <td>' + newEmail + '</td>' +
+                                '   <td><button class="btn btn-primary edit">Edit</button></td>' +
+                                '   <td><button class="btn btn-danger delete">Delete</button></td>' +
+                                '</tr>';
+
+                            if (prevRow) {
+                                prevRow.appendChild(newRow);
+                            } else {
+                                contactTableBody.append(newRow);
+                            }
+                            curRow.remove();
+                        },
+                        error: function( jqXHR, textStatus, errorThrown ) {
+                            alert(errorThrown);
+                        }
+                    });
+                });
+                $('#edit_cancel').click(function () {
+                    let prevRow = $(this).closest('tr').previousSibling;
+                    $(this).closest('tr').remove();
+
+                    if (prevRow) {
+                        prevRow.appendChild(oldRow);
+                    } else {
+                        $contactTableBody.append(oldRow);
+                    }
+                });
+            })
+            $('.delete').click(function () {
+                let curRow = $(this).closest('tr');
+                let id = curRow.attr('data-id');
+                let email = curRow.children()[2].textContent;
+                if (confirm("You're about to delete '" + email + "' do you confirm?")) {
+                    $.ajax({
+                        url: 'index.php?id=' + id,
+                        type: 'DELETE',
+                        success: function (result) {
+                            curRow.remove();
+                        },
+                        error: function () {
+                            alert('Something went wrong at the server side');
+                        }
+                    });
+                }
+            });
+        });
+    });
+
+    $('#new_contact').click(function () {
+        $('#contact_table > tbody:last-child').append(
+            '<tr>' +
+            '<td><input id="firstname" name="firstname"/></td>' +
+            '<td><input id="lastname" name="lastname"/></td>' +
+            '<td><input id="email" name="email"/></td>' +
+            '<td><button id="confirm">Confirm</button></td>' +
+            '<td><button id="cancel">Cancel</td>' +
+            '</tr>'
+        );
+        $('#confirm').click(function () {
+            $.post('index.php', {
+                firstname: $('#firstname').val(),
+                lastname: $('#lastname').val(),
+                email: $('#email').val()
+            });
+        });
+    });
+</script>
