@@ -31,7 +31,7 @@
         integrity="sha384-ho+j7jyWK8fNQe+A12Hb8AhRq26LrZ/JpcUGGOn+Y7RsweNrtN/tE3MoK7ZeZDyx"
         crossorigin="anonymous"></script>
 <script type="application/javascript">
-    function addRecord(record, prevRow) {
+    function addRecord(record) {
         let contactTableBody = $('#contact_table > tbody');
 
         let newRow = '<tr data-id="' + record.id + '">' +
@@ -42,11 +42,7 @@
             '   <td><button class="btn btn-danger delete" onclick="deleteRecord($(this).closest(\'tr\'));">Delete</button></td>' +
             '</tr>';
 
-        if (prevRow) {
-            prevRow.appendChild(newRow);
-        } else {
-            contactTableBody.append(newRow);
-        }
+        contactTableBody.append(newRow);
     }
 
     function getEditRow(curRow)
